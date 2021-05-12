@@ -9,9 +9,9 @@ Unity 버전 : 2019.4.13f1
 
 
 
-==== 21-05-12 진행 분야 ====
+========= 21-05-12 진행 분야 ===========
 
-<img src="https://user-images.githubusercontent.com/63836325/117990697-5c3ed080-b378-11eb-97bf-db84491b6ea9.PNG" width=350 height=250><br>
+<img src="https://user-images.githubusercontent.com/63836325/117990697-5c3ed080-b378-11eb-97bf-db84491b6ea9.PNG" width=350 height=250>
 <img src="https://user-images.githubusercontent.com/63836325/117990746-6791fc00-b378-11eb-88ed-012dbb084253.PNG" width=350 height=250><br>
 화살 발사 구현 완료!
 
