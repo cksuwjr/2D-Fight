@@ -31,7 +31,7 @@ public class Arrow : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.tag.Equals("Player") && collision.gameObject != My_Act.gameObject)
+        if ((collision.gameObject.tag.Equals("Player") || collision.gameObject.tag.Equals("Monster")) && collision.gameObject != My_Act.gameObject)
         {
             collision.GetComponent<Status>().GetDamage(Damage, "AD");
             Destroy(gameObject);

@@ -8,9 +8,10 @@ public class Player_Act : MonoBehaviour
     Rigidbody2D rb;
     SpriteRenderer sr;
     Animator anim;
-    CapsuleCollider2D cc;
-
+    //CapsuleCollider2D cc;
     GameObject Weapon;
+    GameObject AfterImage;
+
     int currentWeaponID;
 
     public Status status;       // 플레이어 스탯(체력,공격력,방어력 등)
@@ -34,14 +35,16 @@ public class Player_Act : MonoBehaviour
         // 필요한 컴포넌트 불러오기
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
-        cc = GetComponent<CapsuleCollider2D>();
+        //cc = GetComponent<CapsuleCollider2D>();
 
         anim = GetComponent<Animator>();
         status = GetComponent<Status>();
         HP = transform.GetChild(1).GetChild(2).GetComponent<Image>();
 
+        AfterImage = transform.GetChild(2).gameObject;
+
         // 기본 설정
-        basicOffset = new Vector2(cc.offset.x, cc.offset.y);
+        //basicOffset = new Vector2(cc.offset.x, cc.offset.y);
 
         Move_Speed = 5f;
 
@@ -57,14 +60,21 @@ public class Player_Act : MonoBehaviour
     {
         HP.fillAmount = (status.current_HP * (100 / status.Max_HP)) / 100;  // 체력바 이미지 변경
         CoolTimer();
-        if (Stop_Timer == 0 && Stop_Act)
+
+        if (Stop_Timer == 0 && Stop_Act) // 행동정지 당했을때 불가
         {
             Move();
+            Act();
         }
+        // 행동정지 없이 가능
+        No_ristrict_Act();
+
     }
     void Move()
     {
-        rb.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * Move_Speed, rb.velocity.y);
+        if(Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
+            rb.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * Move_Speed, rb.velocity.y);
+
         if (Input.GetKey(KeyCode.LeftArrow))
         {
             sr.flipX = false;
@@ -92,25 +102,33 @@ public class Player_Act : MonoBehaviour
             if (!isJumping && isGround && Jump_Overlap_ban_Timer == 0)  // 점프시 
             {
                 Jump_Overlap_ban_Timer = 0.5f;          // 점프 중복 방지 시간 설정
-                cc.offset = new Vector2(cc.offset.x, -cc.offset.y);  // 점프시 플레이어 충돌 범위 조정
+                //cc.offset = new Vector2(cc.offset.x, -cc.offset.y);  // 점프시 플레이어 충돌 범위 조정
                 Jump();
                 
             }
 
         if (isJumping && isGround && Jump_Overlap_ban_Timer == 0)   // 점프 이후 땅에 착지시
         {
-            cc.offset = basicOffset;                    // 플레이어 충돌 범위 원상복구
+            //cc.offset = basicOffset;                    // 플레이어 충돌 범위 원상복구
             NotJump();
         }
 
+    }
 
-
-
+    void Act()
+    {
         if (Input.GetKeyDown(KeyCode.Space))
             Attack(0); // 기본공격
         else if (Input.GetKeyDown(KeyCode.Q))
             Attack(1); // 활공격
-
+    }
+    void No_ristrict_Act()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if(isGround)
+                BackStep();
+        }
     }
     void ChangeWeaponDirection(int n)
     {
@@ -137,6 +155,19 @@ public class Player_Act : MonoBehaviour
         anim.SetBool("isJump", false);
     }
 
+    void BackStep()
+    {
+        SetStop(0.6f);
+        AfterImage.SetActive(true);
+        rb.velocity = new Vector2(0, rb.velocity.y);
+
+        if (SeeingDirection == 1)
+            rb.AddForce(new Vector2(-400, 0));
+        else if (SeeingDirection == -1)
+            rb.AddForce(new Vector2(400, 0));
+
+        
+    }
 
     void Attack(int what)
     {
@@ -175,17 +206,17 @@ public class Player_Act : MonoBehaviour
     }
 
     // 캐릭터 행동 제한
-    public void SetStop(float second) // 초 단위    ex) CC적중시
+    public void SetStop(float second) // 초 단위    ex) CC적중시, 고정시간만큼의 멈칫이 필요할때.
     {
         Stop_Timer = second;
-        if (isGround)
-            rb.velocity = new Vector2(0, rb.velocity.y);
+        //if (isGround)
+        //    rb.velocity = new Vector2(0, rb.velocity.y);
     }
     public void SetStop(bool stop)  // 직접 제한    ex) 본인 스킬 사용시.
     {
         Stop_Act = stop;
-        if (isGround)
-            rb.velocity = new Vector2(0, rb.velocity.y);
+        //if (isGround)
+        //    rb.velocity = new Vector2(0, rb.velocity.y);
     }
 
     void CoolTimer()
@@ -200,7 +231,11 @@ public class Player_Act : MonoBehaviour
             Stop_Timer -= Time.deltaTime;
 
         if (Stop_Timer < 0)
+        {
             Stop_Timer = 0;
+            if (AfterImage.activeSelf)   // 잔상효과 있을경우 끄기     // 
+                AfterImage.SetActive(false);
+        }
 
     }
 
