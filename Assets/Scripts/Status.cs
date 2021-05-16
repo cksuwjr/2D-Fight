@@ -42,16 +42,23 @@ public class Status : MonoBehaviour
 
     public void GetDamage(float Damage, string DamageType)     // 데미지 입음
     {
-        Debug.Log(ApplyDefenseOnDamage(Damage, DamageType) + "의 피해를 입음!");
         current_HP -= ApplyDefenseOnDamage(Damage, DamageType);
     }
 
     float ApplyDefenseOnDamage(float Damage, string DamageType)      // 데미지 방어력 적용 계산식
     {
+        string debug = "";
+        debug += "전체데미지 " + Damage + "중 ";
         if (DamageType == "AD")
+        {
+            debug += "방어력: " + AD_Defense + " | 데미지 " + string.Format("{0:0.00} ", double.Parse(((AD_Defense / (100 + AD_Defense)) * 100).ToString())) + "% 감소됨!" + (Damage - (Damage * (AD_Defense / (100 + AD_Defense)))) + "의 피해를 입음!";
+            Debug.Log(debug);
             return Damage - (Damage * (AD_Defense / (100 + AD_Defense)));
+        }
         else if (DamageType == "AP")
+        {
             return Damage - (Damage * (AP_Defense / (100 + AP_Defense)));
+        }
         else if (DamageType == "True")
             return Damage;
         else

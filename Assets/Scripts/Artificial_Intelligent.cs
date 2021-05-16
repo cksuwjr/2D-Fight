@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Player_Act : MonoBehaviour
+public class Artificial_Intelligent : MonoBehaviour
 {
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -30,6 +30,11 @@ public class Player_Act : MonoBehaviour
     float Jump_Overlap_ban_Timer; // 점프 중복 방지 시간. 점프 후 일정 시간동안 점프 감지 X
     float Stop_Timer;           // 멈칫: 시간이 지나면 멈칫 풀림, 외부에서 설정가능[SetStop(float)](public, ex 속박)
     bool Stop_Act;           // 멈칫: 특정 조건 만족시 멈칫 풀림, 외부에서 설정가능[SetStop(true/false)]
+
+
+    int AI_Move_Pattern;
+    float AI_Act_Time;
+
     void Awake()
     {
         // 필요한 컴포넌트 불러오기
@@ -54,6 +59,11 @@ public class Player_Act : MonoBehaviour
         Stop_Act = true;  // 행동가능 true
 
         SeeingDirection = -1;  // 바라보는 방향
+
+
+        // 인공지능 행동 패턴, 지속시간
+        AI_Move_Pattern = 0;
+        AI_Act_Time = 0; // 움직임 지속시간
     }
 
     void Update()
@@ -61,51 +71,67 @@ public class Player_Act : MonoBehaviour
         HP.fillAmount = (status.current_HP * (100 / status.Max_HP)) / 100;  // 체력바 이미지 변경
         CoolTimer();
 
-        if (Stop_Timer == 0 && Stop_Act) // 행동정지 당했을때 불가
+
+        if (AI_Act_Time == 0)
         {
-            Move();
-            Act();
+            AI_Move_Pattern = Random.Range(1, 5);
+            SetAct();
+            Debug.Log("행동설정됨!" + AI_Act_Time + "초간 " + AI_Move_Pattern + "패턴!!");
         }
+
+        if (Stop_Timer == 0 && Stop_Act && AI_Act_Time > 0)
+        {
+            if (AI_Move_Pattern == 1)
+                Move("오");
+            else if (AI_Move_Pattern == 2)
+                Move("왼");
+            else if (AI_Move_Pattern == 3)
+                Move("None");
+            else if (AI_Move_Pattern == 4)
+                Move("Jump");
+        }
+        
+        // Act();
         // 행동정지 없이 가능
-        No_ristrict_Act();
+        // No_ristrict_Act();
 
     }
-    void Move()
+    void Move(string direction)
     {
-        if(Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
-            rb.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * Move_Speed, rb.velocity.y);
-
-        if (Input.GetKey(KeyCode.LeftArrow))
+        if (direction == "왼")
         {
             sr.flipX = false;
             anim.SetBool("isWalk", true);
             anim.SetBool("isIdle", false);
             ChangeWeaponDirection(-1);
             SeeingDirection = -1;
+            rb.velocity = new Vector2(-1 * Move_Speed, rb.velocity.y);
         }
-        else if (Input.GetKey(KeyCode.RightArrow))
+        else if (direction == "오")
         {
             sr.flipX = true;
             anim.SetBool("isWalk", true);
             anim.SetBool("isIdle", false);
             ChangeWeaponDirection(1);
             SeeingDirection = 1;
+            rb.velocity = new Vector2(1 * Move_Speed, rb.velocity.y);
         }
-        else
+        else if(direction == "None")
         {
             anim.SetBool("isWalk", false);
             anim.SetBool("isIdle", true);
         }
-
-
-        if (Input.GetKey(KeyCode.UpArrow))
+        else if (direction == "Jump")
             if (!isJumping && isGround && Jump_Overlap_ban_Timer == 0)  // 점프시 
             {
                 Jump_Overlap_ban_Timer = 0.5f;          // 점프 중복 방지 시간 설정
                 //cc.offset = new Vector2(cc.offset.x, -cc.offset.y);  // 점프시 플레이어 충돌 범위 조정
                 Jump();
-                
+                SetAct(0);
             }
+
+
+
 
         if (isJumping && isGround && Jump_Overlap_ban_Timer == 0)   // 점프 이후 땅에 착지시
         {
@@ -126,13 +152,13 @@ public class Player_Act : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if(isGround)
+            if (isGround)
                 BackStep();
         }
     }
     void ChangeWeaponDirection(int n)
     {
-        if(Weapon != null)
+        if (Weapon != null)
             switch (currentWeaponID)
             {
                 case 0: // 기본공격 방향 전환
@@ -168,7 +194,7 @@ public class Player_Act : MonoBehaviour
         else if (SeeingDirection == -1)
             rb.AddForce(new Vector2(400, 0));
 
-        
+
     }
 
     void Attack(int what)
@@ -194,9 +220,9 @@ public class Player_Act : MonoBehaviour
                 Weapon.GetComponent<Bow>().Charging();
                 break;
         }
-            
+
         //case 1:   케이스에 따라 WeaponCollider변경.
-        
+
     }
     public void EndCharging()
     {
@@ -226,14 +252,25 @@ public class Player_Act : MonoBehaviour
         //    rb.velocity = new Vector2(0, rb.velocity.y);
     }
 
+    void SetAct()
+    {
+        AI_Act_Time = Random.Range(1, 4);
+    }
+    void SetAct(float second)
+    {
+        AI_Act_Time = second;
+    }
+
     void CoolTimer()
     {
-        if(Jump_Overlap_ban_Timer > 0)
+        // 점프 중복방지 시간 타이머
+        if (Jump_Overlap_ban_Timer > 0)
             Jump_Overlap_ban_Timer -= Time.deltaTime;
-        
+
         if (Jump_Overlap_ban_Timer < 0)
             Jump_Overlap_ban_Timer = 0;
 
+        // 멈칫 타이머
         if (Stop_Timer > 0)
             Stop_Timer -= Time.deltaTime;
 
@@ -244,6 +281,14 @@ public class Player_Act : MonoBehaviour
                 AfterImage.SetActive(false);
         }
 
+        // AI 행동 지속시간 타이머
+
+        if (AI_Act_Time > 0)
+            AI_Act_Time -= Time.deltaTime;
+
+        if(AI_Act_Time < 0)
+            AI_Act_Time = 0;
+
     }
 
 
@@ -252,7 +297,7 @@ public class Player_Act : MonoBehaviour
         if (collision.transform.tag == "Ground")
             isGround = true;
 
-        
+
     }
     void OnCollisionExit2D(Collision2D collision)
     {
