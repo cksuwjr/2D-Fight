@@ -18,6 +18,8 @@ public class Artificial_Intelligent : MonoBehaviour
 
     Image HP;
 
+    IsPlayerContact DetactCollider;
+    bool isFollowing;
 
     public float Move_Speed;    // 스피드
     public int SeeingDirection;      // 바라보는 방향   -1 / +1
@@ -44,9 +46,29 @@ public class Artificial_Intelligent : MonoBehaviour
 
         anim = GetComponent<Animator>();
         status = GetComponent<Status>();
-        HP = transform.GetChild(1).GetChild(2).GetComponent<Image>();
 
-        AfterImage = transform.GetChild(2).gameObject;
+
+        DetactCollider = transform.GetChild(1).GetComponent<IsPlayerContact>();
+
+
+
+        GameObject FirstSet;
+        // Resources폴더에서 Char UI 프리팹 추가 및 Child로 종속, 초기 세팅
+        FirstSet = Resources.Load<GameObject>("Character/Char UI");
+        FirstSet = Instantiate(FirstSet, Vector2.zero, Quaternion.identity);
+        FirstSet.transform.SetParent(transform);
+        FirstSet.transform.localPosition = new Vector2(0.032f, 0.843f);
+
+        HP = FirstSet.transform.GetChild(1).GetChild(2).GetComponent<Image>();
+
+        // Resources폴더에서 Particle System 프리팹 추가 및 Child로 종속, 초기 세팅
+        FirstSet = Resources.Load<GameObject>("ParticleSystem/Particle System");
+        FirstSet = Instantiate(FirstSet, Vector2.zero, Quaternion.identity);
+        FirstSet.transform.SetParent(transform);
+        FirstSet.transform.localPosition = Vector2.zero;
+
+        AfterImage = FirstSet.gameObject;
+
 
         // 기본 설정
         //basicOffset = new Vector2(cc.offset.x, cc.offset.y);
@@ -64,6 +86,10 @@ public class Artificial_Intelligent : MonoBehaviour
         // 인공지능 행동 패턴, 지속시간
         AI_Move_Pattern = 0;
         AI_Act_Time = 0; // 움직임 지속시간
+
+        
+
+
     }
 
     void Update()
@@ -72,14 +98,17 @@ public class Artificial_Intelligent : MonoBehaviour
         CoolTimer();
 
 
-        if (AI_Act_Time == 0)
+
+        // 적이 감지되지 않은 경우 움직임 알고리즘
+        if (!isFollowing && AI_Act_Time == 0)
         {
-            AI_Move_Pattern = Random.Range(1, 5);
             SetAct();
+            AI_Move_Pattern = Random.Range(1, 5);
             Debug.Log("행동설정됨!" + AI_Act_Time + "초간 " + AI_Move_Pattern + "패턴!!");
+
         }
 
-        if (Stop_Timer == 0 && Stop_Act && AI_Act_Time > 0)
+        if (!isFollowing && Stop_Timer == 0 && Stop_Act && AI_Act_Time > 0)
         {
             if (AI_Move_Pattern == 1)
                 Move("오");
@@ -88,9 +117,43 @@ public class Artificial_Intelligent : MonoBehaviour
             else if (AI_Move_Pattern == 3)
                 Move("None");
             else if (AI_Move_Pattern == 4)
+            {
                 Move("Jump");
+                SetAct(0);
+            }
         }
-        
+
+        // 적을 감지하면 isFollwing ON / OFF
+        if (DetactCollider.GetFollowTime() > 0)
+            if (!isFollowing)
+            {
+                isFollowing = true;
+                AI_Act_Time = 0;
+                AI_Move_Pattern = 0;
+            }
+        else
+            isFollowing = false;
+
+
+        // 적 감지중일때 움직임 알고리즘
+        if (isFollowing)
+        {
+            float EnemyX = DetactCollider.WhoisEnemy().transform.position.x;
+            float MyX = transform.position.x;
+            float distance = Mathf.Abs(EnemyX - MyX);
+            //Debug.Log(distance);
+                if (EnemyX > MyX) // +x 좌표에 위치시
+                    Move("오");
+                else if (EnemyX < MyX)
+                    Move("왼");
+                else
+                    Move("None");
+
+        }
+
+
+
+
         // Act();
         // 행동정지 없이 가능
         // No_ristrict_Act();
@@ -116,19 +179,22 @@ public class Artificial_Intelligent : MonoBehaviour
             SeeingDirection = 1;
             rb.velocity = new Vector2(1 * Move_Speed, rb.velocity.y);
         }
-        else if(direction == "None")
+        else if (direction == "None")
         {
             anim.SetBool("isWalk", false);
             anim.SetBool("isIdle", true);
         }
         else if (direction == "Jump")
+        {
             if (!isJumping && isGround && Jump_Overlap_ban_Timer == 0)  // 점프시 
             {
+
                 Jump_Overlap_ban_Timer = 0.5f;          // 점프 중복 방지 시간 설정
                 //cc.offset = new Vector2(cc.offset.x, -cc.offset.y);  // 점프시 플레이어 충돌 범위 조정
                 Jump();
-                SetAct(0);
+                Debug.Log("점프!!");
             }
+        }
 
 
 

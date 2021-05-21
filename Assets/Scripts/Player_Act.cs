@@ -32,6 +32,10 @@ public class Player_Act : MonoBehaviour
     bool Stop_Act;           // 멈칫: 특정 조건 만족시 멈칫 풀림, 외부에서 설정가능[SetStop(true/false)]
     void Awake()
     {
+        // 플레이어간 충돌 제거
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Player"), true);
+
+
         // 필요한 컴포넌트 불러오기
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
@@ -39,19 +43,39 @@ public class Player_Act : MonoBehaviour
 
         anim = GetComponent<Animator>();
         status = GetComponent<Status>();
-        HP = transform.GetChild(1).GetChild(2).GetComponent<Image>();
 
-        AfterImage = transform.GetChild(2).gameObject;
+
+
+
+
+
+        GameObject FirstSet;
+        // Resources폴더에서 Char UI 프리팹 추가 및 Child로 종속, 초기 세팅
+        FirstSet = Resources.Load<GameObject>("Character/Char UI");
+        FirstSet = Instantiate(FirstSet, Vector2.zero, Quaternion.identity);
+        FirstSet.transform.SetParent(transform);
+        FirstSet.transform.localPosition = new Vector2(0.032f, 0.843f);
+
+        HP = FirstSet.transform.GetChild(1).GetChild(2).GetComponent<Image>();
+
+        // Resources폴더에서 Particle System 프리팹 추가 및 Child로 종속, 초기 세팅
+        FirstSet = Resources.Load<GameObject>("ParticleSystem/Particle System");
+        FirstSet = Instantiate(FirstSet, Vector2.zero, Quaternion.identity);
+        FirstSet.transform.SetParent(transform);
+        FirstSet.transform.localPosition = Vector2.zero;
+
+        AfterImage = FirstSet.gameObject;
+
+
 
         // 기본 설정
-        //basicOffset = new Vector2(cc.offset.x, cc.offset.y);
 
         Move_Speed = 5f;
 
 
         // 게임 설정
 
-        Stop_Act = true;  // 행동가능 true
+        SetStop(true); // 행동가능 true
 
         SeeingDirection = -1;  // 바라보는 방향
     }
@@ -69,14 +93,26 @@ public class Player_Act : MonoBehaviour
         // 행동정지 없이 가능
         No_ristrict_Act();
 
+
+
+        if (Input.GetKeyDown(KeyCode.S))
+            status.LevelUP();
+
+
+
+
+
     }
     void Move()
     {
         if(Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
             rb.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * Move_Speed, rb.velocity.y);
+     
 
         if (Input.GetKey(KeyCode.LeftArrow))
         {
+            rb.velocity = new Vector2(-Move_Speed, rb.velocity.y);
+
             sr.flipX = false;
             anim.SetBool("isWalk", true);
             anim.SetBool("isIdle", false);
@@ -126,8 +162,10 @@ public class Player_Act : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.E))
         {
-            if(isGround)
+            if (isGround)
                 BackStep();
+            else
+                Debug.Log("점프중이라 E불가합니다");
         }
     }
     void ChangeWeaponDirection(int n)
@@ -253,6 +291,11 @@ public class Player_Act : MonoBehaviour
             isGround = true;
 
         
+    }
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.transform.tag == "Ground")
+            isGround = true;
     }
     void OnCollisionExit2D(Collision2D collision)
     {
